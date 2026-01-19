@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: paperless_db
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: paperlesspass
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: paperless_redis
+    restart: unless-stopped
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless_app
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      # --- Core ---
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: paperlesspass
+      PAPERLESS_TIME_ZONE: Europe/Vienna
+      PAPERLESS_URL: http://localhost:8000
+
+      # --- Admin User (wird beim ersten Start angelegt, wenn DB leer ist) ---
+      PAPERLESS_ADMIN_USER: admin
+      PAPERLESS_ADMIN_PASSWORD: admin1234
+      PAPERLESS_ADMIN_MAIL: admin@example.local
+
+      # --- OCR ---
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_OCR_MODE: skip
+      PAPERLESS_FILENAME_FORMAT: "{{ created_year }}-{{ correspondent }}-{{ title }}"
+
+
+      # --- Imports (optional hilfreich) ---
+      PAPERLESS_CONSUMPTION_DIR: /usr/src/paperless/consume
+      PAPERLESS_CONSUMER_POLLING: 10
+
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  paperless_data:
+  paperless_media:
