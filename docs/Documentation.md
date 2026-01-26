@@ -15,4 +15,4 @@
 
 ## Datenmodell
 
-- TODO
+![DatenModell](../img/DatenModell.png)
